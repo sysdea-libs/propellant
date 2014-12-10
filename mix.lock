@@ -1,0 +1,2 @@
+%{"erlexec": {:git, "git://github.com/saleyn/erlexec.git", "1790d0729d20493b7c4e89a3f1b4e9e17d177820", []},
+  "poison": {:hex, :poison, "1.2.1"}}
