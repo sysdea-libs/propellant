@@ -5,7 +5,7 @@ defmodule Propellant do
     GenServer.start_link(__MODULE__, nil, opts)
   end
 
-  def init(opts) do
+  def init(nil) do
     cmd = Path.join([__DIR__, "../priv/thrust/ThrustShell.app/Contents/MacOS/ThrustShell"])
     {:ok, pid, ospid} = :exec.run_link(to_char_list(cmd), [:stdin, :stdout])
     {:ok, %{pid: pid,
@@ -33,15 +33,15 @@ defmodule Propellant do
   def handle_call({:call, target, method, args}, from, state) do
     send_message(%{_action: "call",
                    _target: target,
-                   _method: "show",
-                   _args: %{}}, from, state)
+                   _method: method,
+                   _args: args}, from, state)
   end
   def handle_call({:stop}, _from, state) do
     :exec.stop(state.ospid)
     {:stop, :normal, state}
   end
 
-  def handle_info({:stdout, n, data}, state) do
+  def handle_info({:stdout, _, data}, state) do
     handle_chunks(String.split(state.buffer <> data, @boundary), state)
   end
   def handle_chunks([tail], state) do
@@ -59,18 +59,6 @@ defmodule Propellant do
   def handle_message(message, state) do
     IO.inspect message
     state
-  end
-
-  def create_window(pid) do
-    GenServer.call(pid, {:create, "window", %{root_url: "http://google.com"}})
-  end
-
-  def show_window(pid, target) do
-    GenServer.call(pid, {:call, target, "show", %{}})
-  end
-
-  def create_session(pid) do
-    GenServer.call(pid, {:create, "session", %{}})
   end
 
   def stop(pid) do
