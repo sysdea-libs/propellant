@@ -8,11 +8,18 @@ defmodule Propellant do
   def init(nil) do
     cmd = Path.join([__DIR__, "../priv/thrust/ThrustShell.app/Contents/MacOS/ThrustShell"])
     {:ok, pid, ospid} = :exec.run_link(to_char_list(cmd), [:stdin, :stdout])
+
+    {:ok, event_pid} = GenEvent.start_link
+
+    GenEvent.add_mon_handler event_pid, EventLogger, nil
+
     {:ok, %{pid: pid,
             ospid: ospid,
             counter: 0,
             waiting: %{},
-            buffer: ""}}
+            buffer: "",
+            events: event_pid,
+            registered: %{}}}
   end
 
   @boundary "--(Foo)++__THRUST_SHELL_BOUNDARY__++(Bar)--\n"
@@ -41,6 +48,10 @@ defmodule Propellant do
     {:stop, :normal, state}
   end
 
+  def handle_cast({:register, id, item}, state) do
+    {:noreply, %{state | registered: Map.put(state.registered, id, item)}}
+  end
+
   def handle_info({:stdout, _, data}, state) do
     handle_chunks(String.split(state.buffer <> data, @boundary), state)
   end
@@ -56,12 +67,31 @@ defmodule Propellant do
     GenServer.reply(state.waiting[message["_id"]], message["_result"])
     %{state | waiting: Map.delete(state.waiting, message["_id"])}
   end
-  def handle_message(message, state) do
-    IO.inspect message
+  def handle_message(%{"_action" => "event"}=message, state) do
+    GenEvent.notify state.events, %{type: message["_type"],
+                                    target: state.registered[message["_target"]],
+                                    data: message["_event"]}
     state
+  end
+
+  def create(browser, type, args, fulfill) do
+    result = GenServer.call(browser, {:create, type, args})
+    item = fulfill.(result)
+    GenServer.cast(browser, {:register, item.id, item})
+    item
   end
 
   def stop(pid) do
     GenServer.call(pid, {:stop})
+  end
+end
+
+defmodule EventLogger do
+  use GenEvent
+  require Logger
+
+  def handle_event(event, state) do
+    Logger.debug inspect(event)
+    {:ok, state}
   end
 end

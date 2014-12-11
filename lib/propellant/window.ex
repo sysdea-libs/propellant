@@ -2,9 +2,10 @@ defmodule Propellant.Window do
   defstruct [:browser, :id]
 
   def create(browser, args) do
-    %{"_target" => id} = GenServer.call(browser, {:create, "window", args})
-    %Propellant.Window{browser: browser,
-                       id: id}
+    Propellant.create browser, "window", args, fn %{"_target" => id} ->
+      %Propellant.Window{browser: browser,
+                         id: id}
+    end
   end
 
   def show(window) do
