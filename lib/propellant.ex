@@ -99,7 +99,7 @@ defmodule Propellant do
     |> Propellant.Menu.add_submenu(%{menu_id: submenu2.id, label: "My Other Menu", command_id: 4})
     |> Propellant.Menu.set_application_menu
 
-    Propellant.Window.create(pid, %{root_url: "https://google.com"})
+    Propellant.Window.create(pid, %{root_url: "http://breach.cc"})
     |> Propellant.Window.show
     |> Propellant.Window.focus
   end
