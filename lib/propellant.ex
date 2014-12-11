@@ -8,10 +8,7 @@ defmodule Propellant do
   def init(nil) do
     cmd = Path.join([__DIR__, "../priv/thrust/ThrustShell.app/Contents/MacOS/ThrustShell"])
     {:ok, pid, ospid} = :exec.run_link(to_char_list(cmd), [:stdin, :stdout])
-
     {:ok, event_pid} = GenEvent.start_link
-
-    GenEvent.add_mon_handler event_pid, EventLogger, nil
 
     {:ok, %{pid: pid,
             ospid: ospid,
@@ -43,7 +40,10 @@ defmodule Propellant do
                    _method: method,
                    _args: args}, from, state)
   end
-  def handle_call({:stop}, _from, state) do
+  def handle_call(:events, from, state) do
+    {:reply, state.events, state}
+  end
+  def handle_call(:stop, _from, state) do
     :exec.stop(state.ospid)
     {:stop, :normal, state}
   end
@@ -82,11 +82,17 @@ defmodule Propellant do
   end
 
   def stop(pid) do
-    GenServer.call(pid, {:stop})
+    GenServer.call(pid, :stop)
+  end
+
+  def events(pid) do
+    GenServer.call(pid, :events)
   end
 
   def test_browser do
     {:ok, pid} = Propellant.start_link
+
+    GenEvent.add_mon_handler Propellant.events(pid), CommandListener, nil
 
     submenu1 = Propellant.Menu.create(pid)
     |> Propellant.Menu.add_item(%{label: "My Label", command_id: 1})
@@ -105,12 +111,17 @@ defmodule Propellant do
   end
 end
 
-defmodule EventLogger do
+defmodule CommandListener do
   use GenEvent
   require Logger
 
+  def handle_event(%{type: "execute", target: target,
+                     data: %{"command_id" => cid, "event_flags" => flags} }, state) do
+    Logger.info "Got command execute #{cid}, flags: #{inspect flags}"
+    {:ok, state}
+  end
   def handle_event(event, state) do
-    Logger.debug inspect(event)
+    Logger.debug "Ignored event #{inspect(event)}"
     {:ok, state}
   end
 end

@@ -9,7 +9,24 @@ Primordial
 ## Example
 
 ```elixir
+defmodule CommandListener do
+  use GenEvent
+  require Logger
+
+  def handle_event(%{type: "execute", target: target,
+                     data: %{"command_id" => cid, "event_flags" => flags} }, state) do
+    Logger.info "Got command execute #{cid}, flags: #{inspect flags}"
+    {:ok, state}
+  end
+  def handle_event(event, state) do
+    Logger.debug "Ignored event #{inspect(event)}"
+    {:ok, state}
+  end
+end
+
 {:ok, pid} = Propellant.start_link
+
+GenEvent.add_mon_handler Propellant.events(pid), CommandListener, nil
 
 submenu1 = Propellant.Menu.create(pid)
 |> Propellant.Menu.add_item(%{label: "My Label", command_id: 1})
