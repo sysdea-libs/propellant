@@ -1,4 +1,6 @@
 defmodule Propellant.Session do
+  import Propellant.Base
+
   defstruct [:browser, :id]
 
   def create(browser, args) do
@@ -7,4 +9,10 @@ defmodule Propellant.Session do
                          id: id}
     end
   end
+
+  defmethod :visitedlink_add
+  defmethod :proxy_set
+  defmethod :proxy_clear
+
+  defaccessor :is_off_the_record
 end
