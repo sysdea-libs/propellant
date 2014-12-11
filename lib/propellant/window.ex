@@ -3,7 +3,7 @@ defmodule Propellant.Window do
 
   defstruct [:browser, :id]
 
-  def create(browser, args) do
+  def create(browser, args \\ %{}) do
     Propellant.create browser, "window", args, fn %{"_target" => id} ->
       %Propellant.Window{browser: browser,
                          id: id}

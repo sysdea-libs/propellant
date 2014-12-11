@@ -2,8 +2,9 @@ defmodule Propellant.Base do
   defmacro defmethod(name) do
     quote do
       def unquote(name)(struct, args \\ %{}) do
-        res = GenServer.call(struct.browser,
-                             {:call, struct.id, unquote(Atom.to_string(name)), args})
+        GenServer.call(struct.browser,
+                       {:call, struct.id, unquote(Atom.to_string(name)), args})
+        struct
       end
     end
   end
